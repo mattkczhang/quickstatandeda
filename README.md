@@ -14,9 +14,30 @@ x['float_column'] = x['float_column'].astype('float')
 x['date_time_column'] = pd.to_datetime(x['date_time_column'])
 ```
 
+Note that the t tests are conducted only for binary variable (columns with data type object and have only two unique values). If you have categorical variables with unique values greater than 2, please try to `pd.get_dummies()` and `loc[]` functions to convert them to binary ones. Here is a simple example:
+
+```python
+import pandas as pd
+
+df = pd.DataFrame({
+    'a':['a','b','c']
+    })
+
+df = pd.get_dummies(data=df)
+
+df.loc[df.a==1,'a'] = 'a'
+df.loc[df.a==0, 'a'] = 'not a'
+```
+
 ## Installation
 
-Use the package manager [pip](https://pip.pypa.io/en/stable/) to install quickstatandeda. If there are some version conflicts, try creating a new virtual environment or use `pip install --upgrade <package_name>` to upgrade the required package. 
+Use the package manager [pip](https://pypi.org/project/quickstatandeda/) to install quickstatandeda. 
+
+```bash
+python3 -m pip install quickstatandeda
+```
+
+If there are some version conflicts, try creating a new virtual environment or use `pip install --upgrade <package_name>` to upgrade the required package. 
 
 ## Usage
 

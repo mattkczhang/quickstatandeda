@@ -382,6 +382,7 @@ def edaFeatures(x, y = None, id=None, save_path = '', significant_level = 0.05, 
         save_path += '/'
     numeric_features = x.select_dtypes(exclude=['object', 'datetime64[ns]']).columns.tolist()
     categorical_features = x.dtypes[x.dtypes=='object'].index.tolist()
+    datetime_features = x.select_dtypes(include=['datetime64[ns]']).columns.tolist()
     if id != None:
         if id in numeric_features:
             numeric_features.remove(id)
@@ -389,6 +390,7 @@ def edaFeatures(x, y = None, id=None, save_path = '', significant_level = 0.05, 
             categorical_features.remove(id)
     num_num = len(numeric_features)
     num_cat = len(categorical_features)
+    num_datetime = len(datetime_features)
 
     sum_stats = {}
     visuals = {}
@@ -426,6 +428,19 @@ def edaFeatures(x, y = None, id=None, save_path = '', significant_level = 0.05, 
         sum_stat_categorical.loc['unique values'] = unique_values
         # print(sum_stat_categorical.to_markdown(tablefmt="grid"))
         sum_stats['Categorical Features'] = sum_stat_categorical
+    if num_datetime > 0:
+        max_time = []
+        min_time = []
+        time_diff = []
+        for i in datetime_features:
+            max_time.append(max(x[i]))
+            min_time.append(min(x[i]))
+            time_diff.append(str(max(x[i])-min(x[i])))
+        sum_stat_datetime = x[datetime_features].describe()[:2]
+        sum_stat_datetime.loc['latest date time'] = max_time
+        sum_stat_datetime.loc['earliest date time'] = max_time
+        sum_stat_datetime.loc['date time range'] = time_diff
+        sum_stats['Date Time Features'] = sum_stat_datetime
 
     # correlation coefficient matrix
     if num_num > 0:
@@ -467,8 +482,65 @@ def edaFeatures(x, y = None, id=None, save_path = '', significant_level = 0.05, 
                 ax.set_ylabel('Sample Quantiles')
 
                 plt.savefig(save_path+'visuals/'+i+'_qqplot.png', dpi=500)
-                visuals['Q-Q plot of Feature '+i] = i+'_qqplot.png'
+                visuals['Q-Q Plot of Feature '+i] = i+'_qqplot.png'
                 plt.clf()
+
+        # lineplot 
+        if num_datetime > 0:
+            c = 0
+            h = 0
+            m = 0
+            ncol_per_row = 2
+            row_multiplier = num_datetime // ncol_per_row + 1
+            fig, axs = plt.subplots(num_num*row_multiplier, ncol_per_row, figsize=(10*ncol_per_row, 5*num_num*row_multiplier))
+            while c < num_num*row_multiplier and m < num_datetime:
+                if num_num*row_multiplier == 1:
+                    ax_temp = axs[h]
+                elif num_datetime == 1:
+                    ax_temp = axs[c,h]
+                else:
+                    ax_temp = axs[c,h]
+                sns.lineplot(data=x, x=datetime_features[m], 
+                                y=np.repeat(numeric_features,row_multiplier).tolist()[c], 
+                                color = '#49acf2', ax=ax_temp)
+                sns.scatterplot(data=x, x=datetime_features[m], 
+                                y=np.repeat(numeric_features,row_multiplier).tolist()[c], 
+                                color = '#ebac59', ax=ax_temp)
+                sns.despine(right = True)
+                if h < ncol_per_row-1:
+                    if m < num_datetime-1:
+                        h += 1
+                        m += 1
+                    elif m == num_datetime-1:
+                        m = 0
+                        h = 0
+                        c += 1
+                else:
+                    if m < num_datetime-1:
+                        h = 0
+                        c += 1
+                        m += 1
+                    elif m == num_datetime-1:
+                        m = 0
+                        h = 0
+                        c += 1
+            row = row_multiplier-1
+            col = num_datetime % ncol_per_row
+            while row < num_num*row_multiplier:
+                for i in range(col, ncol_per_row):
+                    if num_num*row_multiplier == 1:
+                        fig.delaxes(axs[i])
+                    else:
+                        fig.delaxes(axs[row,i])
+                row += row_multiplier
+            plt.savefig(save_path+'visuals/lineplot_all_numeric_vs_datetime.png', dpi=500)
+            visuals['Lineplot On All Numeric Features Paired with Date Time Features'] = 'lineplot_all_numeric_vs_datetime.png'
+            plt.clf()
+
+        sns.clustermap(x[numeric_features])
+        plt.savefig(save_path+'visuals/cluster_map.png', dpi=500)
+        visuals['Cluster Map On All Numeric Features'] = 'cluster_map.png'
+        plt.clf()
 
         # pairplot
         sns.pairplot(x[numeric_features], kind='reg',
@@ -477,7 +549,7 @@ def edaFeatures(x, y = None, id=None, save_path = '', significant_level = 0.05, 
                                             'color': '#197805'}},
                     diag_kws= {'color': '#82ad32'})
         plt.savefig(save_path+'visuals/pairplot_numeric.png', dpi=500)
-        visuals['Pairplot On All numeric Features'] = 'pairplot_numeric.png'
+        visuals['Pairplot On All Numeric Features'] = 'pairplot_numeric.png'
         plt.clf()
 
     if num_cat > 0:
@@ -509,34 +581,72 @@ def edaFeatures(x, y = None, id=None, save_path = '', significant_level = 0.05, 
         m = 0
         ncol_per_row = 4
         row_multiplier = num_num // ncol_per_row + 1
-        fig, axs = plt.subplots(num_cat*row_multiplier, ncol_per_row, figsize=(10*num_cat, 2*(num_num)))
+        fig, axs = plt.subplots(num_cat*row_multiplier, ncol_per_row, figsize=(10*ncol_per_row, 10*num_cat*row_multiplier))
         while c < num_cat*row_multiplier and m < num_num:
-            ax_temp = axs[c,h]
+            if num_cat*row_multiplier == 1:
+                ax_temp = axs[h]
+            elif num_num == 1:
+                ax_temp = axs[c,h]
+            else:
+                ax_temp = axs[c,h]                    
+            # ax_temp = axs[c,h]
             sns.boxplot(data=x, x=np.repeat(categorical_features,row_multiplier).tolist()[c], 
                                     y=numeric_features[m], color = '#49acf2', ax=ax_temp)
             sns.stripplot(data=x, x=np.repeat(categorical_features,row_multiplier).tolist()[c], 
                                     y=numeric_features[m], color = '#ebac59', ax=ax_temp)
             sns.despine(right = True)
             if h < ncol_per_row-1:
-                h += 1
-                m += 1
+                if m < num_num-1:
+                    h += 1
+                    m += 1
+                elif m == num_num-1:
+                    h = 0
+                    m = 0
+                    c += 1
             else:
-                h = 0
-                c += 1
-                m += 1
-            if m == num_num-1:
-                m = 0
-                h = 0
-                c += 1
+                if m < num_num-1:
+                    h = 0
+                    m += 1
+                    c += 1
+                elif m == num_num-1:
+                    h = 0
+                    m = 0
+                    c += 1
         row = row_multiplier-1
-        col = ncol_per_row - num_num % ncol_per_row
-        while row <= num_cat*row_multiplier:
+        col = num_num % ncol_per_row
+        while row < num_cat*row_multiplier:
             for i in range(col, ncol_per_row):
                 fig.delaxes(axs[row,i])
             row += row_multiplier
         plt.savefig(save_path+'visuals/boxplot_all_numeric_vs_categorical.png', dpi=500)
-        visuals['Boxplot On All Categorical Features Paired with numeric Features'] = 'boxplot_all_numeric_vs_categorical.png'
+        visuals['Boxplot On All Categorical Features Paired with Numeric Features'] = 'boxplot_all_numeric_vs_categorical.png'
         plt.clf()
+        # elif num_cat*row_multiplier == 1:
+        #     while c < num_cat*row_multiplier and m < num_num:
+        #         ax_temp = axs[h]
+        #         sns.boxplot(data=x, x=np.repeat(categorical_features,row_multiplier).tolist()[c], 
+        #                                 y=numeric_features[m], color = '#49acf2', ax=ax_temp)
+        #         sns.stripplot(data=x, x=np.repeat(categorical_features,row_multiplier).tolist()[c], 
+        #                                 y=numeric_features[m], color = '#ebac59', ax=ax_temp)
+        #         sns.despine(right = True)
+        #         if h < ncol_per_row-1:
+        #             h += 1
+        #             m += 1
+        #         else:
+        #             if m < num_num-1:
+        #                 h = 0
+        #                 c += 1
+        #                 m += 1
+        #             elif m == num_num-1:
+        #                 m = 0
+        #                 h = 0
+        #                 c += 1
+        #     col = num_num % ncol_per_row
+        #     for i in range(col, ncol_per_row):
+        #         fig.delaxes(axs[i])
+        #     plt.savefig(save_path+'visuals/boxplot_all_numeric_vs_categorical.png', dpi=500)
+        #     visuals['Boxplot On All Categorical Features Paired with Numeric Features'] = 'boxplot_all_numeric_vs_categorical.png'
+        #     plt.clf()
 
     # t test 
     # paired

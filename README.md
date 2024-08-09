@@ -2,7 +2,17 @@
 
 quickstatandeda is a Python library for quick and automatic exploratory data analysis and preliminary statistics analysis. The outputs of the main `edaFeatures()` function are a folder of visualizations and a html file that contains all analyses. This library is built based on mainstream libraries like numpy, pandas, scipy, statsmodel, matplotlib, and seaborn. 
 
-Make sure the data types of your input dataframe are correctly converted! 
+Make sure the data types of your input dataframe are correctly converted! Use `pd.to_datetime()` and `astype()` functions to convert the data type. Here is a simple example:
+
+```python
+import pandas as pd
+x = pd.read_csv('xxx.csv')
+
+x['string_column'] = x['string_column'].astype('string')
+x['int_column'] = x['int_column'].astype('int')
+x['float_column'] = x['float_column'].astype('float')
+x['date_time_column'] = pd.to_datetime(x['date_time_column'])
+```
 
 ## Installation
 
@@ -13,6 +23,7 @@ Use the package manager [pip](https://pip.pypa.io/en/stable/) to install quickst
 Here is a simple example: 
 
 ```python
+import pandas as pd
 from quickstatandeda import edaFeatures
 
 x = pd.read_csv('xxx.csv')
@@ -38,13 +49,9 @@ The outputs are structured as following:
 
 A visuals folder is created automatically to save all the visuals used in the html output file. 
 
-## GitHub Repository
-
-The source code can be accessed in the [GitHub repository](https://github.com/mattkczhang/quickstatandeda/tree/main).
-
 ## Contributing
 
-If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the [GitHub repository](https://github.com/mattkczhang/quickstatandeda/tree/main) to discuss. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
+If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the GitHub repository to discuss. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
 
 ## License
 

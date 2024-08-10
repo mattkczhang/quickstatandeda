@@ -1,5 +1,11 @@
 # quickstatandeda
 
+![Python Badge](https://img.shields.io/badge/Python-3776AB?logo=python&logoColor=fff&style=flat)
+[![PyPi license](https://badgen.net/pypi/license/pip/)](https://pypi.org/project/quickstatandeda/)
+[![GitHub](https://badgen.net/badge/icon/github?icon=github&label)](https://github.com/mattkczhang/quickstatandeda)
+[![Open Source? Yes!](https://badgen.net/badge/Open%20Source%20%3F/Yes%21/blue?icon=github)](https://github.com/mattkczhang/quickstatandeda)
+[![Downloads](https://static.pepy.tech/badge/quickstatandeda)](https://pepy.tech/project/quickstatandeda)
+
 quickstatandeda is a Python library for quick and automatic exploratory data analysis and preliminary statistics analysis. The outputs of the main `edaFeatures()` function are a folder of visualizations and a html file that contains all analyses. This library is built based on mainstream libraries like numpy, pandas, scipy, statsmodel, matplotlib, and seaborn. 
 
 Make sure the data types of your input dataframe are correctly converted! Use `pd.to_datetime()` and `astype()` functions to convert the data type. Here is a simple example:
@@ -41,7 +47,7 @@ If there are some version conflicts, try creating a new virtual environment or u
 
 ## Usage
 
-Here is a simple example: 
+Here is a simple example to generate an analysis report using the `edaFeatures` function: 
 
 ```python
 import pandas as pd
@@ -68,11 +74,11 @@ The outputs are structured as following:
 │   └── ...
 ```
 
-A visuals folder is created automatically to save all the visuals used in the html output file. 
+A visuals folder is created automatically to save all the visuals used in the html output file, and both the html file and the visuals folder are presented in the `save_path` input parameter. 
 
 ## Contributing
 
-If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the GitHub repository to discuss. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
+If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the GitHub repository to discuss. You are also more than welcome to contact me directly. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
 
 ## License
 

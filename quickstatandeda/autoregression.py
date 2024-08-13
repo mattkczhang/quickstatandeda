@@ -1,7 +1,7 @@
 import pandas as pd
 import numpy as np
 import statsmodels.api as sm
-from htmlpreparation import getModelResults, allCombinations
+from .htmlpreparation import getModelResults, allCombinations
 
 def forwardSelection(x, y):
     """Forward selection of linear regression

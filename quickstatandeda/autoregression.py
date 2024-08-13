@@ -15,7 +15,7 @@ def forwardSelection(x, y):
     """
     if len(x) != len(y):
         print('The number of rows of features and target is not matched. Check out their length!')
-        return
+        return None
 
     predictors = {}
     for i in x.columns.tolist():
@@ -32,7 +32,7 @@ def forwardSelection(x, y):
         'Intercept', results0['AIC'], results0['BIC'], results0['R-squared'], 
         results0['Adjusted R-sqaured'], results0['Log-likelihood'],results0['P-value'], np.nan]])
     
-    max_p = 1
+    min_p = 1
     model0 = model
     name = ''
 
@@ -50,18 +50,18 @@ def forwardSelection(x, y):
 
             f_test_p = model.compare_f_test(model0)[1]
             # print(key, f_test_p)       
-            if f_test_p < max_p:
-                max_p = f_test_p
+            if f_test_p < min_p:
+                min_p = f_test_p
                 name = key
                 results = results1
-        if max_p > 0.05:
+        if min_p > 0.05 or min_p == 1:
             break
 
         step_summary = pd.concat([step_summary, pd.DataFrame([[name, results['AIC'], results['BIC'], results['R-squared'], 
-                                                                   results['Adjusted R-sqaured'], results['Log-likelihood'],results['P-value'], max_p]])], ignore_index = True)
+                                                                   results['Adjusted R-sqaured'], results['Log-likelihood'],results['P-value'], min_p]])], ignore_index = True)
         trainData = trainData.join(predictors[name])
         predictors.pop(name)
-        max_p = 1
+        min_p = 1
         model0 = model
 
     step_summary.reset_index(inplace=True)
@@ -82,7 +82,7 @@ def backwardSelection(x, y):
     """
     if len(x) != len(y):
         print('The number of rows of features and target is not matched. Check out their length!')
-        return
+        return None
 
     predictors = {}
     for i in x.columns.tolist():
@@ -120,8 +120,9 @@ def backwardSelection(x, y):
                 max_p = f_test_p
                 name = key
                 results = results1
-        if max_p > 0.05:
-            break
+        
+        if max_p > 0.05 or max_p == 0:
+            break            
 
         step_summary = pd.concat([step_summary, pd.DataFrame([['-'+name, results['AIC'], results['BIC'], results['R-squared'], 
                                                                    results['Adjusted R-sqaured'], results['Log-likelihood'],results['P-value'], max_p]])], ignore_index = True)
@@ -148,23 +149,26 @@ def allPossibleSelection(x, y):
     """
     if len(x) != len(y):
         print('The number of rows of features and target is not matched. Check out their length!')
-        return
+        return None
 
-    combs = allCombinations(x.columns)
-    step_summary = pd.DataFrame()
-    for i in combs:
-        trainData = pd.DataFrame(x[list(i)])
-        trainData.insert(0, 'intercept', 1.0)
-        model = sm.OLS(y, trainData, missing='drop').fit()
-        results = getModelResults(model)
-        step_summary = pd.concat([step_summary, 
-                                  pd.DataFrame([[str(list(i)).replace('[','').replace(']','').replace(', ', ' + ').replace("'",""), 
-                                                 results['AIC'], results['BIC'], results['R-squared'], 
-                                                 results['Adjusted R-sqaured'], results['Log-likelihood'],
-                                                 results['P-value']]])], ignore_index=True)
+    if len(x.columns) > 0:
+        combs = allCombinations(x.columns)
+        step_summary = pd.DataFrame()
+        for i in combs:
+            trainData = pd.DataFrame(x[list(i)])
+            trainData.insert(0, 'intercept', 1.0)
+            model = sm.OLS(y, trainData, missing='drop').fit()
+            results = getModelResults(model)
+            step_summary = pd.concat([step_summary, 
+                                    pd.DataFrame([[str(list(i)).replace('[','').replace(']','').replace(', ', ' + ').replace("'",""), 
+                                                    results['AIC'], results['BIC'], results['R-squared'], 
+                                                    results['Adjusted R-sqaured'], results['Log-likelihood'],
+                                                    results['P-value']]])], ignore_index=True)
 
-    step_summary.reset_index(inplace=True)
-    step_summary.columns = ['Index', 'Predictors', 'AIC', 'BIC', 'R-squared', 'Adjusted R-sqaured',
-                       'Log-likelihood', 'P-value']    
-    
-    return step_summary
+        step_summary.reset_index(inplace=True)
+        step_summary.columns = ['Index', 'Predictors', 'AIC', 'BIC', 'R-squared', 'Adjusted R-sqaured',
+                        'Log-likelihood', 'P-value']    
+        
+        return step_summary
+    else:
+        return None

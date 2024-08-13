@@ -19,10 +19,7 @@ sns.set_context("paper",
                     'ytick.labelsize':6,
                     'legend.fontsize':7})   
 
-os.makedirs('visuals', exist_ok=True)
-
-
-def edaFeatures(x : pd.DataFrame, y : Union[str,pd.Series] = None, 
+def edaFeatures(x : pd.DataFrame, y : str = None, 
                 id : str =None, save_path : str = '', 
                 significant_level : float = 0.05, file_name : str = 'EDA'):
     """Generate a HTML based exploratory data analysis report
@@ -35,9 +32,8 @@ def edaFeatures(x : pd.DataFrame, y : Union[str,pd.Series] = None,
         significant_level (float, optional): significant level for t test. Defaults to 0.05.
         file_name (str, optional): file name of the HTML report. Defaults to 'EDA'.
     """
-    if type(y) == pd.Series and len(x) != len(y):
-            print('The number of rows of features and target is not matched. Check out their length!')
-            return
+
+    os.makedirs('visuals', exist_ok=True)
 
     # prepare the variables
     if save_path != '' and save_path[-1] != '/':
@@ -349,23 +345,23 @@ def edaFeatures(x : pd.DataFrame, y : Union[str,pd.Series] = None,
 
     # regression
     if y != None:
-        target = None
-        if type(y) == str and y in x.columns:
-            target = x.dropna()[y]
-        elif type(y) == pd.core.series.Series and len(y) != len(x.dropna()):
-            target = y
-        if type(target) == pd.core.series.Series:
-            forwardSelection_tab = forwardSelection(x.dropna()[numeric_features].copy().drop(columns=target.name),target)
-            backwardSelection_tab = backwardSelection(x.dropna()[numeric_features].copy().drop(columns=target.name),target)
-            allPossibleSelection_tab = allPossibleSelection(x.dropna()[numeric_features].copy().drop(columns=target.name), target)
-            if forwardSelection_tab is not None:
-                regressions['Forward Selection'] = forwardSelection_tab
-            if backwardSelection_tab is not None:
-                regressions['Backward Selection'] = backwardSelection_tab.drop(columns=['P-value'])
-            if allPossibleSelection_tab is not None:
-                bestModel_tab = findBestModels(allPossibleSelection_tab)
-                regressions['All Possible Selection'] = allPossibleSelection_tab.drop(columns=['P-value'])
-                regressions['Best Models'] = bestModel_tab.drop(columns=['P-value','Index'])
+        target = x.dropna()[y]
+        # if type(y) == str and y in x.columns:
+        #     target = x.dropna()[y]
+        # elif type(y) == pd.core.series.Series and len(y) == len(x.dropna()):
+        #     target = y
+        # if type(target) == pd.core.series.Series:
+        forwardSelection_tab = forwardSelection(x.dropna()[numeric_features].copy().drop(columns=target.name),target)
+        backwardSelection_tab = backwardSelection(x.dropna()[numeric_features].copy().drop(columns=target.name),target)
+        allPossibleSelection_tab = allPossibleSelection(x.dropna()[numeric_features].copy().drop(columns=target.name), target)
+        if forwardSelection_tab is not None:
+            regressions['Forward Selection'] = forwardSelection_tab
+        if backwardSelection_tab is not None:
+            regressions['Backward Selection'] = backwardSelection_tab.drop(columns=['P-value'])
+        if allPossibleSelection_tab is not None:
+            bestModel_tab = findBestModels(allPossibleSelection_tab)
+            regressions['All Possible Selection'] = allPossibleSelection_tab.drop(columns=['P-value'])
+            regressions['Best Models'] = bestModel_tab.drop(columns=['P-value','Index'])
 
     saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name)
 

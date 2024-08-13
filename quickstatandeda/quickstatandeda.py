@@ -6,9 +6,7 @@ import seaborn as sns
 import os
 from scipy.stats import ttest_ind, ttest_rel
 from scipy.stats import wilcoxon, mannwhitneyu
-from htmlpreparation import *
 from autoregression import *
-from typing import Union
 
 sns.set_style('white')
 sns.set_context("paper", 

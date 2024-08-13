@@ -6,7 +6,8 @@ import seaborn as sns
 import os
 from scipy.stats import ttest_ind, ttest_rel
 from scipy.stats import wilcoxon, mannwhitneyu
-from autoregression import *
+from autoregression import forwardSelection, backwardSelection, allPossibleSelection
+from htmlpreparation import findOutliers, findBestModels, saveInfoToHtml
 
 sns.set_style('white')
 sns.set_context("paper", 

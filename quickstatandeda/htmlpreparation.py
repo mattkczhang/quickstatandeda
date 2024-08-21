@@ -38,10 +38,12 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
             html, body {{
                 margin: 0;
                 padding: 0;
-                max-width: 100%;
-                overflow-x: hidden; /* Prevent horizontal scroll */
-                font-family: Arial, sans-serif;
+                font-family: 'Arial', sans-serif;
                 line-height: 1.6;
+                color: #000000;
+                background-color: #ffffff;
+                max-width: 100%;
+                overflow-x: hidden;
             }}
 
             /* Header Styles */
@@ -53,7 +55,7 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
                 position: sticky;
                 top: 0;
                 width: 100%;
-                box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+                box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
                 z-index: 1000;
                 display: flex;
                 align-items: center;
@@ -72,9 +74,10 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
 
             header h1 {{
                 margin: 0;
-                font-size: 2.5em;
-                font-weight: normal;
-                display: inline-block;
+                font-size: 2em;
+                font-weight: 600;
+                text-transform: uppercase;
+                letter-spacing: 1.5px;
             }}
 
             header nav a {{
@@ -82,89 +85,111 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
                 text-decoration: none;
                 margin: 0 15px;
                 font-size: 1.1em;
+                font-weight: 500;
                 transition: color 0.3s ease;
             }}
 
             header nav a:hover {{
-                color: #ddd;
+                color: #aaaaaa; /* Light gray on hover */
             }}
-            
+
             /* Dynamic Content Styles */
             .plot {{
                 text-align: center;
-                margin: 10px 0;
+                margin: 20px 0;
             }}
+
             .plot img {{
-                max-width: 100%; /* Ensures the image is responsive */
-                height: auto; /* Maintains aspect ratio */
+                max-width: 100%;
+                height: auto;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+                border-radius: 5px;
             }}
+
             .table-responsive {{
                 overflow-x: auto;
+                margin-top: 20px;
             }}
+
             .table {{
                 width: 100%;
-                max-width: 100%;
-                margin-bottom: 1rem;
-                background-color: transparent;
+                margin-bottom: 20px;
+                border-collapse: collapse;
+            }}
+
+            .table th, .table td {{
+                padding: 12px;
+                text-align: left;
+                border-bottom: 1px solid #dddddd;
+            }}
+
+            .table th {{
+                background-color: #000000; /* Black header */
+                color: white;
+                font-weight: 600;
             }}
 
             /* Subsection Title Styles */
             ol {{
                 padding-left: 0;
-                list-style: none; /* Remove default list styling */
+                list-style: none;
             }}
+
             ol li {{
-                font-size: 1.2em;
-                font-weight: bold;
-                padding: 10px 0;
-                margin-bottom: 15px;
-                background-color: #ffffff;
-                box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+                font-size: 1.3em;
+                font-weight: 600;
+                margin-bottom: 20px;
+                background-color: #f5f5f5;
+                padding: 15px 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
                 border-radius: 5px;
-                text-align: left;
-                padding-left: 20px;
             }}
 
             /* Button Styles */
             .top-button {{
-                margin-top: 20px;
-                padding: 10px 15px;
+                display: inline-block;
+                margin-top: 30px;
+                padding: 12px 20px;
                 background-color: #000000; /* Black button */
                 color: white;
                 border: none;
                 border-radius: 5px;
                 cursor: pointer;
-                transition: background-color 0.3s ease;
+                font-size: 1em;
+                font-weight: 600;
+                text-transform: uppercase;
+                transition: background-color 0.3s ease, transform 0.2s ease;
             }}
 
             .top-button:hover {{
                 background-color: #333333;
+                transform: scale(1.05);
             }}
 
             /* Container Styles */
             .container {{
-                max-width: 100%;
+                max-width: 1100px;
                 margin: auto;
                 padding: 20px;
-                box-sizing: border-box;
             }}
 
             /* Section Styles */
             section {{
                 padding: 60px 20px;
                 text-align: center;
-                background-color: #f4f4f9;
-                border-bottom: 1px solid #ddd;
-                min-height: 150px; /* Add min-height for visibility */
-            }}
-
-            section:nth-child(even) {{
-                background-color: #e2e2eb;
+                background-color: #ffffff; /* Ensure white background */
+                border-bottom: 1px solid #dddddd;
+                border-radius: 10px;
+                margin-bottom: 40px;
             }}
 
             section h2 {{
-                font-size: 2em;
-                margin-bottom: 10px;
+                font-size: 2.2em;
+                font-weight: 700;
+                color: #000000;
+                margin-bottom: 20px;
+                text-transform: uppercase;
+                letter-spacing: 1.2px;
             }}
 
             /* Footer Styles */
@@ -172,21 +197,39 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
                 background-color: #000000; /* Black background */
                 color: white;
                 text-align: center;
-                padding: 15px;
-                position: relative;
-                bottom: 0;
-                width: 100%;
+                padding: 20px;
+                font-size: 1em;
+                letter-spacing: 1px;
+            }}
+
+            /* Collapsible Section Styles */
+            details {{
+                margin-bottom: 15px;
+                border: 1px solid #ddd;
+                border-radius: 5px;
+                padding: 10px;
+                background-color: #ffffff; /* Ensure white background */
+            }}
+
+            summary {{
+                font-size: 1.5em;
+                font-weight: 600;
+                cursor: pointer;
+                margin-bottom: 10px;
+                background-color: #f9f9f9; /* Background color for summary */
+                padding: 10px;
+                border-radius: 5px;
             }}
 
             /* Responsive Styles */
             @media (max-width: 768px) {{
                 header h1 {{
-                    font-size: 2em;
+                    font-size: 1.8em;
                 }}
 
                 header nav a {{
-                    font-size: 1em;
-                    margin: 0 10px;
+                    font-size: 0.9em;
+                    margin: 0 8px;
                 }}
 
                 header {{
@@ -207,8 +250,13 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
                 }}
 
                 ol li {{
-                    font-size: 1.1em;
-                    padding: 8px 15px;
+                    font-size: 1em;
+                    padding: 10px 15px;
+                }}
+
+                .top-button {{
+                    padding: 10px 15px;
+                    font-size: 0.9em;
                 }}
             }}
         </style>
@@ -231,60 +279,66 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
         <!-- Main Content -->
         <main class="container">
             <section id="summary">
-                <h2>Summary Statistics</h2>
-                <ol>
-                """ 
+                <details>
+                    <summary>Summary Statistics</summary>
+                    <ol>
+                    """ 
     for i in sum_stats.keys():
         html_template += f"""
-                    <li>{i}
-                    <div class="table-responsive">
-                        {sum_stats[i].to_html(justify='center', classes='table table-striped', border=2)}
-                    </div>
-                    </li>
-            """
+                        <li>{i}
+                        <div class="table-responsive">
+                            {sum_stats[i].to_html(justify='center', classes='table table-striped', border=2)}
+                        </div>
+                        </li>
+                """
     html_template += """
-                </ol>
-                <a href="#top" class="top-button">Back to Top</a>
+                    </ol>
+                    <a href="#top" class="top-button">Back to Top</a>
+                </details>
             </section>
 
             <section id="eda">
-                <h2>Exploratory Data Analysis</h2>
-                <ol>
-                """
+                <details>
+                    <summary>Exploratory Data Analysis</summary>
+                    <ol>
+                    """
     for i in visuals.keys():
         html_template += f"""
-                        <li>{i}
-                        <div class="plot">
-                            <img src="{save_path}visuals/{visuals[i]}" alt="EDA Visual" class="img-fluid">
-                        </div>
-                        </li>
-                    """
-    html_template += """
-                </ol>  
-                <a href="#top" class="top-button">Back to Top</a>
-            </section>
-
-            <section id="regression">
-                <h2>Preliminary Regression Analysis</h2>
-                <ol>
-                """
-    if len(regressions.keys()) > 0:
-        for i in regressions.keys():
-            html_template += f"""
                             <li>{i}
-                            <div class="table-responsive">
-                                {regressions[i].to_html(index=False, justify='center', classes='table table-striped', border=2)}
+                            <div class="plot">
+                                <img src="{save_path}visuals/{visuals[i]}" alt="EDA Visual" class="img-fluid">
                             </div>
                             </li>
                         """
+    html_template += """
+                    </ol>  
+                    <a href="#top" class="top-button">Back to Top</a>
+                </details>
+            </section>
+
+            <section id="regression">
+                <details>
+                    <summary>Preliminary Regression Analysis</summary>
+                    <ol>
+                    """
+    if len(regressions.keys()) > 0:
+        for i in regressions.keys():
+            html_template += f"""
+                                <li>{i}
+                                <div class="table-responsive">
+                                    {regressions[i].to_html(index=False, justify='center', classes='table table-striped', border=2)}
+                                </div>
+                                </li>
+                            """
     else:
         html_template += f"""
-                        <p> Target feature y is not specified correctly. If the input y is string, check the spelling of the column name.
-                        </p>
-                                """
+                            <p> Target feature y is not specified correctly. If the input y is string, check the spelling of the column name.
+                            </p>
+                                    """
     html_template += """
-                </ol>  
-                <a href="#top" class="top-button">Back to Top</a>         
+                    </ol>  
+                    <a href="#top" class="top-button">Back to Top</a>         
+                </details>
             </section>
         </main>
 

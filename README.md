@@ -83,9 +83,7 @@ A visuals folder is created automatically to save all the visuals used in the ht
 
 ## Contributing
 
-If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the GitHub repository to discuss. You are also more than welcome to contact [me](mailto:kzhang.matt@gmail.com) directly.
-
- directly. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
+If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the GitHub repository to discuss. You are also more than welcome to contact [me](mailto:kzhang.matt@gmail.com) directly. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
 
 Note that a simple test file is provided in the test folder. After making changes, you can simply run `pytest test/` at the main folder level to test the package script. It might take more than 8 minutes to test the package. 
 

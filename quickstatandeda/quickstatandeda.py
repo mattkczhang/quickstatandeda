@@ -41,8 +41,9 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
     else:
         warnings.filterwarnings('default')
 
-    # prepare the folder for visuals
+    # prepare the folder for visuals and tables
     os.makedirs('visuals', exist_ok=True)
+    os.makedirs('tables', exist_ok=True)
 
     # prepare the variables
     if save_path != '':
@@ -96,6 +97,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         sum_stat_numeric.loc['Anderson Darling result'] = Anderson_Darling_results
         sum_stat_numeric.loc['data type'] = datatypes
         sum_stats['Numeric Features'] = sum_stat_numeric
+        sum_stat_numeric.to_csv(save_path+'tables/sum_stat_numeric.csv', index=False)
 
     if num_cat > 0:
         unique_values = []
@@ -110,6 +112,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         sum_stat_categorical.loc['unique values'] = unique_values
         sum_stat_categorical.loc['data type'] = datatypes
         sum_stats['Categorical Features'] = sum_stat_categorical
+        sum_stat_categorical.to_csv(save_path+'tables/sum_stat_categorical.csv', index=False)
 
     if num_datetime > 0:
         max_time = []
@@ -130,6 +133,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         sum_stat_datetime.loc['number of nan'] = nan_count
         sum_stat_datetime.loc['data type'] = datatypes
         sum_stats['Date Time Features'] = sum_stat_datetime
+        sum_stat_datetime.to_csv(save_path+'tables/sum_stat_datetime.csv', index=False)
 
     # t test 
     # paired
@@ -158,8 +162,10 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
                     paired_t_test_nonparametric.loc[i] = row_nonpara
         if len(paired_t_test_parametric) > 0:
             sum_stats['Parametric Paired T Test'] = paired_t_test_parametric
+            paired_t_test_parametric.to_csv(save_path+'tables/paired_t_test_parametric.csv', index=False)
         if len(paired_t_test_nonparametric) > 0:
             sum_stats['Non-parametric Paired T Test'] = paired_t_test_nonparametric
+            paired_t_test_nonparametric.to_csv(save_path+'tables/paired_t_test_nonparametric.csv', index=False)
 
     #two-sample
     if len(categorical_features) > 0:
@@ -182,8 +188,10 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
                 two_sample_t_test_nonparametric.loc[i] = row_nonpara
         if len(two_sample_t_test_parametric) > 0:
             sum_stats['Parametric Two-Sample T Test'] = two_sample_t_test_parametric
+            two_sample_t_test_parametric.to_csv(save_path+'tables/two_sample_t_test_parametric.csv', index=False)
         if len(two_sample_t_test_nonparametric) > 0:
             sum_stats['Non-parametric Two-Sample T Test'] = two_sample_t_test_nonparametric
+            two_sample_t_test_nonparametric.to_csv(save_path+'tables/two_sample_t_test_nonparametric.csv', index=False)
 
     print('Done preparing summary statistics !')
 
@@ -234,8 +242,8 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
                 plt.clf()
                 plt.close()
 
-        # lineplot 
         if num_datetime > 0:
+            # lineplot 
             c = 0
             h = 0
             m = 0
@@ -286,6 +294,23 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
             visuals['Lineplot On All Numeric Features Paired with Date Time Features'] = 'lineplot_all_numeric_vs_datetime.png'
             plt.clf()
             plt.close()
+
+            # stacked barplot
+            for d in datetime_features:
+                fig, axs = plt.subplots(4, 1, figsize=(10,10*4))
+
+                for i in range(num_cat):
+                    df_grouped = x.groupby([d, categorical_features[i]]).size().unstack(fill_value=0)
+                    df_grouped.plot(kind='bar', stacked=True, ax=axs[i])
+                    axs[i].tick_params(axis='x', rotation=45)
+                    axs[i].set_ylabel(categorical_features[i])
+                    axs[i].set_xlabel('')
+                    axs[i].legend(loc='upper right')
+                
+                plt.savefig(save_path+'visuals/stacked_barplot_'+d+'.png', dpi=500)
+                visuals['Stacked Barplot On All Categorical Features Over '+d] = 'stacked_barplot_'+d+'.png'
+                plt.clf()
+                plt.close()
 
         # clustermap
         if num_num > 1:
@@ -393,12 +418,16 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         allPossibleSelection_tab = allPossibleSelection(x.dropna()[numeric_features].copy().drop(columns=target.name), target)
         if forwardSelection_tab is not None:
             regressions['Forward Selection'] = forwardSelection_tab
+            forwardSelection_tab.to_csv(save_path+'tables/forwardSelection_tab.csv', index=False)
         if backwardSelection_tab is not None:
             regressions['Backward Selection'] = backwardSelection_tab.drop(columns=['P-value'])
+            backwardSelection_tab.drop(columns=['P-value']).to_csv(save_path+'tables/backwardSelection_tab.csv', index=False)
         if allPossibleSelection_tab is not None:
             bestModel_tab = findBestModels(allPossibleSelection_tab)
             regressions['All Possible Selection'] = allPossibleSelection_tab.drop(columns=['P-value'])
+            allPossibleSelection_tab.drop(columns=['P-value']).to_csv(save_path+'tables/allPossibleSelection_tab.csv', index=False)
             regressions['Best Models'] = bestModel_tab.drop(columns=['P-value','Index'])
+            bestModel_tab.drop(columns=['P-value','Index']).to_csv(save_path+'tables/bestModel_tab.csv', index=False)
 
     print('Done preparing auto regression !')
 
@@ -408,4 +437,5 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
 
     print('The HTML report is ready at '+ save_path + file_name+'.html')
     print('The visuals are ready at '+ save_path + 'visuals')
+    print('The summary tables are ready at '+ save_path + 'tables')
 

@@ -18,6 +18,11 @@ x['string_column'] = x['string_column'].astype('string')
 x['int_column'] = x['int_column'].astype('int')
 x['float_column'] = x['float_column'].astype('float')
 x['date_time_column'] = pd.to_datetime(x['date_time_column'])
+x['binary_column'] = x['binary_column'].replace({'True':True, 'False':False}).astype('bool')
+x['categorical_column'] = x['categorical_column'].astype('category')
+x['date_column'] = pd.to_datetime(x['date_column'])
+x['datetime_column'] = pd.to_datetime(x['datetime_column'])
+x['datetime_tz_column'] = x['datetime_column'].dt.tz_localize('UTC')
 ```
 
 Note that the t tests are conducted only for binary variable (columns with data type object and have only two unique values). If you have categorical variables with unique values greater than 2, please try to `pd.get_dummies()` and `loc[]` functions to convert them to binary ones. Here is a simple example:
@@ -78,7 +83,11 @@ A visuals folder is created automatically to save all the visuals used in the ht
 
 ## Contributing
 
-If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the GitHub repository to discuss. You are also more than welcome to contact me directly. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
+If you find a bug 🐛 or want to make some major or minor changes, please open an issue in the GitHub repository to discuss. You are also more than welcome to contact [me](mailto:kzhang.matt@gmail.com) directly.
+
+ directly. Please feel free to fork the project, make any changes, and submit and pull request if you want to make some major changes. 
+
+Note that a simple test file is provided in the test folder. After making changes, you can simply run `pytest test/` at the main folder level to test the package script. It might take more than 8 minutes to test the package. 
 
 ## License
 

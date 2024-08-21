@@ -6,8 +6,10 @@ import seaborn as sns
 import os
 from scipy.stats import ttest_ind, ttest_rel
 from scipy.stats import wilcoxon, mannwhitneyu
-from .autoregression import forwardSelection, backwardSelection, allPossibleSelection
-from .htmlpreparation import findOutliers, findBestModels, saveInfoToHtml
+from .autoregression import forwardSelection, backwardSelection, allPossibleSelection, findBestModels
+from .htmlpreparation import findOutliers, saveInfoToHtml
+from .dataframepreparation import ifPivotable
+import warnings
 
 sns.set_style('white')
 sns.set_context("paper", 
@@ -20,7 +22,8 @@ sns.set_context("paper",
 
 def edaFeatures(x : pd.DataFrame, y : str = None, 
                 id : str =None, save_path : str = '', 
-                significant_level : float = 0.05, file_name : str = 'EDA'):
+                significant_level : float = 0.05, 
+                file_name : str = 'EDA', verbose = False):
     """Generate a HTML based exploratory data analysis report
 
     Args:
@@ -30,16 +33,30 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         save_path (str, optional): path to save the visuals and the HTML report. Defaults to ''.
         significant_level (float, optional): significant level for t test. Defaults to 0.05.
         file_name (str, optional): file name of the HTML report. Defaults to 'EDA'.
+        verbose(bool, optional): whether or not to print out the warnings
     """
+    # warning control
+    if not verbose:
+        warnings.filterwarnings('ignore')
+    else:
+        warnings.filterwarnings('default')
 
+    # prepare the folder for visuals
     os.makedirs('visuals', exist_ok=True)
 
     # prepare the variables
-    if save_path != '' and save_path[-1] != '/':
-        save_path += '/'
-    numeric_features = x.select_dtypes(exclude=['object', 'datetime64[ns]']).columns.tolist()
-    categorical_features = x.dtypes[x.dtypes=='object'].index.tolist()
-    datetime_features = x.select_dtypes(include=['datetime64[ns]']).columns.tolist()
+    if save_path != '':
+        if save_path[-1] != '/':
+            save_path += '/'
+    else:
+        save_path = os.getcwd() + '/'
+    num_dtypes = ['int64', 'int32', 'int16', 'int8', 'uint64', 'uint32', 'uint16', 'uint8',
+                  'float64', 'float32', 'float16']
+    cat_dtypes = ['object','string', 'category', 'bool']
+    datetime_dtypes = ['datetime64[ns]', 'timedelta64[ns]'] 
+    numeric_features = x.select_dtypes(include=num_dtypes).columns.tolist()
+    categorical_features = x.select_dtypes(include=cat_dtypes).columns.tolist()
+    datetime_features = x.select_dtypes(include=datetime_dtypes).columns.tolist() + list(x.columns[x.apply(lambda col: pd.api.types.is_datetime64tz_dtype(col))])
     if id != None:
         if id in numeric_features:
             numeric_features.remove(id)
@@ -54,6 +71,9 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
     regressions = {}
 
     # summary stat
+
+    print('Start preparing summary statistics ... ')
+
     if num_num > 0:
         Shapiro_Wilk_results = []
         Anderson_Darling_results = []
@@ -98,26 +118,86 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         datatypes = []
         nan_count = []
         for i in datetime_features:
-            max_time.append(max(x[i]))
-            min_time.append(min(x[i]))
-            time_diff.append(str(max(x[i])-min(x[i])))
+            max_time.append(max(x[i].dropna()))
+            min_time.append(min(x[i].dropna()))
+            time_diff.append(str(max(x[i].dropna())-min(x[i].dropna())))
             nan_count.append(x[i].isna().sum())
             datatypes.append(str(x[i].dtype))
-        sum_stat_datetime = x[datetime_features].describe()[:2]
+        sum_stat_datetime = x[datetime_features].astype(str).describe()[:2]
         sum_stat_datetime.loc['latest date time'] = max_time
-        sum_stat_datetime.loc['earliest date time'] = max_time
+        sum_stat_datetime.loc['earliest date time'] = min_time
         sum_stat_datetime.loc['date time range'] = time_diff
         sum_stat_datetime.loc['number of nan'] = nan_count
         sum_stat_datetime.loc['data type'] = datatypes
         sum_stats['Date Time Features'] = sum_stat_datetime
 
+    # t test 
+    # paired
+    if id != None:
+        paired_t_test_parametric = pd.DataFrame(columns=numeric_features)
+        paired_t_test_nonparametric = pd.DataFrame(columns=numeric_features)
+        for i in categorical_features:
+            x_i_unique = x[i].unique()
+            if len(x_i_unique[~pd.isna(x_i_unique)]) == 2:
+                row_para = []
+                row_nonpara = []
+                add_row = False
+                for j in numeric_features:
+                    x_ij_unique = x[[id,i,j]].dropna()[i].unique()
+                    if len(x_ij_unique[~pd.isna(x_ij_unique)]) == 2 and ifPivotable( x[[id,i,j]].dropna(),id,i,j):
+                        tab_temp = x[[id,i,j]].dropna().pivot(index=id,columns=i,values=j).reset_index()
+                        if len(tab_temp.dropna()) > 0:
+                            add_row = True
+                            col_temp = tab_temp.columns
+                            row_para.append(ttest_rel(tab_temp[col_temp[1]], tab_temp[col_temp[2]],
+                                                    nan_policy = 'omit').pvalue)
+                            row_nonpara.append(wilcoxon(tab_temp[col_temp[1]], tab_temp[col_temp[2]],
+                                                        nan_policy = 'omit').pvalue)
+                if add_row:
+                    paired_t_test_parametric.loc[i] = row_para
+                    paired_t_test_nonparametric.loc[i] = row_nonpara
+        if len(paired_t_test_parametric) > 0:
+            sum_stats['Parametric Paired T Test'] = paired_t_test_parametric
+        if len(paired_t_test_nonparametric) > 0:
+            sum_stats['Non-parametric Paired T Test'] = paired_t_test_nonparametric
+
+    #two-sample
+    if len(categorical_features) > 0:
+        two_sample_t_test_parametric  = pd.DataFrame(columns=numeric_features)
+        two_sample_t_test_nonparametric = pd.DataFrame(columns=numeric_features)
+        for i in categorical_features:
+            x_i_unique = x[i].unique()
+            if len(x_i_unique[~pd.isna(x_i_unique)]) == 2:
+                row_para = []
+                row_nonpara = []
+                for j in numeric_features:
+                    unique_values = x_i_unique[~pd.isna(x_i_unique)]
+                    row_para.append(ttest_ind(x[x[i]==unique_values[0]][j], 
+                                            x[x[i]==unique_values[0]][j],
+                                            nan_policy = 'omit').pvalue)
+                    row_nonpara.append(mannwhitneyu(x[x[i]==unique_values[0]][j], 
+                                                    x[x[i]==unique_values[0]][j],
+                                                    nan_policy = 'omit').pvalue)
+                two_sample_t_test_parametric.loc[i] = row_para
+                two_sample_t_test_nonparametric.loc[i] = row_nonpara
+        if len(two_sample_t_test_parametric) > 0:
+            sum_stats['Parametric Two-Sample T Test'] = two_sample_t_test_parametric
+        if len(two_sample_t_test_nonparametric) > 0:
+            sum_stats['Non-parametric Two-Sample T Test'] = two_sample_t_test_nonparametric
+
+    print('Done preparing summary statistics !')
+
     # correlation coefficient matrix
+    
+    print('Start preparing visualizations ... ')
+
     if num_num > 0:
         corr_matrix = x[numeric_features].corr()
         sns.heatmap(corr_matrix, annot=True, fmt=".2f", cmap="crest")
         plt.savefig(save_path+'visuals/correlation_heatmap.png', dpi=500)
         visuals['Heatmap of Correlation Matrix'] = 'correlation_heatmap.png'
         plt.clf()
+        plt.close()
 
     # outliers detection
     for i in numeric_features:
@@ -131,6 +211,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
     plt.savefig(save_path+'visuals/missing_value_heatmap.png', dpi=500)
     visuals['Heatmap of Missing Values'] = 'missing_value_heatmap.png'
     plt.clf()
+    plt.close()
 
     if num_num > 0:
         # qq plot
@@ -151,6 +232,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
                 plt.savefig(save_path+'visuals/'+i+'_qqplot.png', dpi=500)
                 visuals['Q-Q Plot of Feature '+i] = i+'_qqplot.png'
                 plt.clf()
+                plt.close()
 
         # lineplot 
         if num_datetime > 0:
@@ -203,6 +285,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
             plt.savefig(save_path+'visuals/lineplot_all_numeric_vs_datetime.png', dpi=500)
             visuals['Lineplot On All Numeric Features Paired with Date Time Features'] = 'lineplot_all_numeric_vs_datetime.png'
             plt.clf()
+            plt.close()
 
         # clustermap
         if num_num > 1:
@@ -210,6 +293,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
             plt.savefig(save_path+'visuals/cluster_map.png', dpi=500)
             visuals['Cluster Map On All Numeric Features'] = 'cluster_map.png'
             plt.clf()
+            plt.close()
 
         # pairplot
         sns.pairplot(x[numeric_features], kind='reg',
@@ -220,6 +304,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         plt.savefig(save_path+'visuals/pairplot_numeric.png', dpi=500)
         visuals['Pairplot On All Numeric Features'] = 'pairplot_numeric.png'
         plt.clf()
+        plt.close()
 
     if num_cat > 0:
         # countplot
@@ -243,6 +328,7 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
             plt.savefig(save_path+'visuals/countplot_categorical.png', dpi=500)
         visuals['Countplot On All Categorical Features'] = 'countplot_categorical.png'
         plt.clf()
+        plt.close()
 
         # boxplot & stripplot
         c = 0
@@ -292,64 +378,16 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
         plt.savefig(save_path+'visuals/boxplot_all_numeric_vs_categorical.png', dpi=500)
         visuals['Boxplot On All Categorical Features Paired with Numeric Features'] = 'boxplot_all_numeric_vs_categorical.png'
         plt.clf()
+        plt.close()
 
-    # t test 
-    # paired
-    if id != None:
-        paired_t_test_parametric = pd.DataFrame(columns=numeric_features)
-        paired_t_test_nonparametric = pd.DataFrame(columns=numeric_features)
-        for i in categorical_features:
-            if len(x[i].unique()) == 2:
-                row_para = []
-                row_nonpara = []
-                add_row = True
-                for j in numeric_features:
-                    tab_temp = x.pivot(index=id,columns=i,values=j).reset_index()
-                    if len(tab_temp.dropna()) > 0:
-                        col_temp = tab_temp.columns
-                        row_para.append(ttest_rel(tab_temp[col_temp[1]], tab_temp[col_temp[1]],
-                                                nan_policy = 'omit').pvalue)
-                        row_nonpara.append(wilcoxon(tab_temp[col_temp[2]], tab_temp[col_temp[1]],
-                                                    nan_policy = 'omit').pvalue)
-                    else:
-                        add_row = False
-                if add_row:
-                    paired_t_test_parametric.loc[i] = row_para
-                    paired_t_test_nonparametric[i] = row_nonpara
-        sum_stats['Parametric Paired T Test'] = paired_t_test_parametric
-        sum_stats['Non-parametric Paired T Test'] = paired_t_test_nonparametric
-
-    #two-sample
-    if len(categorical_features) > 0:
-        two_sample_t_test_parametric  = pd.DataFrame(columns=numeric_features)
-        two_sample_t_test_nonparametric = pd.DataFrame(columns=numeric_features)
-        for i in categorical_features:
-            if len(x[i].unique()) == 2:
-                row_para = []
-                row_nonpara = []
-                for j in numeric_features:
-                    unique_values = x[i].unique()
-                    row_para.append(ttest_ind(x[x[i]==unique_values[0]][j], 
-                                            x[x[i]==unique_values[0]][j],
-                                            nan_policy = 'omit').pvalue)
-                    row_nonpara.append(mannwhitneyu(x[x[i]==unique_values[0]][j], 
-                                                    x[x[i]==unique_values[0]][j],
-                                                    nan_policy = 'omit').pvalue)
-                two_sample_t_test_parametric.loc[i] = row_para
-                two_sample_t_test_nonparametric.loc[i] = row_nonpara
-        if len(two_sample_t_test_parametric) > 0:
-            sum_stats['Parametric Two-Sample T Test'] = two_sample_t_test_parametric
-        if len(two_sample_t_test_nonparametric) > 0:
-            sum_stats['Non-parametric Two-Sample T Test'] = two_sample_t_test_nonparametric
-
+    print('Done preparing visualizations !')
+    
     # regression
-    if y != None:
+
+    print('Start preparing auto regressions ... ')
+
+    if y != None and x[y].dtype.name in num_dtypes:
         target = x.dropna()[y]
-        # if type(y) == str and y in x.columns:
-        #     target = x.dropna()[y]
-        # elif type(y) == pd.core.series.Series and len(y) == len(x.dropna()):
-        #     target = y
-        # if type(target) == pd.core.series.Series:
         forwardSelection_tab = forwardSelection(x.dropna()[numeric_features].copy().drop(columns=target.name),target)
         backwardSelection_tab = backwardSelection(x.dropna()[numeric_features].copy().drop(columns=target.name),target)
         allPossibleSelection_tab = allPossibleSelection(x.dropna()[numeric_features].copy().drop(columns=target.name), target)
@@ -362,5 +400,12 @@ def edaFeatures(x : pd.DataFrame, y : str = None,
             regressions['All Possible Selection'] = allPossibleSelection_tab.drop(columns=['P-value'])
             regressions['Best Models'] = bestModel_tab.drop(columns=['P-value','Index'])
 
+    print('Done preparing auto regression !')
+
+    print('Start preparing the HTML report ...')
+
     saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name)
+
+    print('The HTML report is ready at '+ save_path + file_name+'.html')
+    print('The visuals are ready at '+ save_path + 'visuals')
 

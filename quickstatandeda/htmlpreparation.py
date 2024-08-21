@@ -1,40 +1,3 @@
-import pandas as pd
-import itertools
-
-def getModelResults(model):
-    """Takes in the model from statsmodel.api and return the model metrics
-
-    Args:
-        model (stats.model.api): input model
-
-    Returns:
-        dict: model metrics 
-    """
-    return {
-        'AIC': model.aic,
-        'BIC': model.bic,
-        'R-squared': model.rsquared,
-        'Adjusted R-sqaured': model.rsquared_adj,
-        'Log-likelihood': model.llf,
-        'P-value': model.pvalues[-1]
-    }
-
-
-def allCombinations(lst):
-    """Generate all the combinations of each elements in the list
-
-    Args:
-        lst (list): input list
-
-    Returns:
-        list: list with all the possible combinations
-    """
-    output = []
-    for i in range(1,len(lst)+1):
-        output.extend([j for j in itertools.combinations(lst,i)])
-    return output
-
-
 def findOutliers(df, col, ):
     """Find outlier records bsed on one column/feature
 
@@ -51,28 +14,6 @@ def findOutliers(df, col, ):
     mad = deviation_from_med.abs().median()
     records['modified_z_score'] = deviation_from_med/(0.6745*mad)
     return records[records['modified_z_score'].abs() > 3.5]
-
-def findBestModels(input):
-    """Find the best models based on different criteria
-
-    Args:
-        input (pd.DataFrame): a summary dataframe containing all possible models
-
-    Returns:
-        pd.DataFrame: the best models from the input summary dataframe
-    """
-    output = pd.DataFrame()
-    for i in ['AIC','BIC']:
-        min_i = min(input[i])
-        best_model = input[input[i] == min_i]
-        best_model.insert(loc=0, column='Criterion', value='Best '+i)
-        output = pd.concat([output, best_model])
-    for i in ['R-squared','Adjusted R-sqaured','Log-likelihood']:
-        max_i = max(input[i])
-        best_model = input[input[i] == max_i]
-        best_model.insert(loc=0, column='Criterion', value='Best '+i)
-        output = pd.concat([output, best_model])
-    return output
 
 def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
     """Generate an HTML file that showcases the exploratory data analysis
@@ -338,7 +279,7 @@ def saveInfoToHtml(sum_stats, visuals, regressions, save_path, file_name):
                         """
     else:
         html_template += f"""
-                        <p> Target feature y is not specified correctly. If the input y is string, check the spelling of the column name. If the input y is a pd.Series, check the missing values.
+                        <p> Target feature y is not specified correctly. If the input y is string, check the spelling of the column name.
                         </p>
                                 """
     html_template += """
